@@ -15,3 +15,21 @@ services:
       - /app/var
     command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
     restart: unless-stopped
+
+  app_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: symfony-php8-app-dev
+    container_name: symfony_app_dev
+    ports:
+      - "8001:8000"
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+    volumes:
+      - .:/app
+      - /app/vendor
+      - /app/var
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+    restart: unless-stopped
