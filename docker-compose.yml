@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: symfony-php8-app
+    container_name: symfony_app
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+    volumes:
+      - .:/app
+      - /app/var
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+    restart: unless-stopped

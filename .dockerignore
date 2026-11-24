@@ -1,0 +1,10 @@
+.git
+var/*
+!var/.gitkeep
+vendor
+node_modules
+.env.local
+*.md
+.dockerignore
+docker-compose.yml
+Dockerfile
