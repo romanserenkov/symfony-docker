@@ -24,4 +24,4 @@ open http://localhost:8080
 ## Структура docker
 - `docker/php/Dockerfile` — PHP 8.6-fpm-alpine, расширения intl/opcache/pdo_pgsql, Composer
 - `docker/nginx/Dockerfile` + `default.conf` — nginx, fastcgi_pass php:9000
-- `docker-compose.yml` — php + nginx + database (healthcheck, volume pg_data)
+- `docker-compose.yml` — php + nginx + database (healthcheck, volume database_data)
