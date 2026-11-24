@@ -1,35 +1,59 @@
 services:
-  app:
+  php:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: symfony-php8-app
-    container_name: symfony_app
-    ports:
-      - "8000:8000"
+      dockerfile: docker/php/Dockerfile
+    image: symfony-php8-fpm
+    container_name: symfony_php
     environment:
-      APP_ENV: dev
-      APP_DEBUG: "1"
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: ${APP_DEBUG:-1}
+      DATABASE_URL: "postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8"
     volumes:
       - .:/app
       - /app/var
-    command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+    depends_on:
+      database:
+        condition: service_healthy
     restart: unless-stopped
 
-  app_dev:
+  nginx:
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    image: symfony-php8-app-dev
-    container_name: symfony_app_dev
+      dockerfile: docker/nginx/Dockerfile
+    image: symfony-nginx
+    container_name: symfony_nginx
     ports:
-      - "8001:8000"
-    environment:
-      APP_ENV: dev
-      APP_DEBUG: "1"
+      - "8080:80"
     volumes:
-      - .:/app
-      - /app/vendor
-      - /app/var
-    command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+      - .:/app:ro
+    depends_on:
+      - php
     restart: unless-stopped
+
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    container_name: symfony_database
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      # You should definitely change the password in production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  database_data:
+###< doctrine/doctrine-bundle ###
