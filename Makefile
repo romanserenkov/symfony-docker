@@ -2,7 +2,7 @@
 COMPOSE := docker compose
 PHP     := $(COMPOSE) exec php
 
-.PHONY: help up down restart ps logs logs-nginx logs-php build sh sql console cache-clear migrate-install migrate-diff make-migration db-create composer-install
+.PHONY: help up down restart ps logs logs-nginx logs-php logs-rabbit logs-redis logs-kafka rabbit-ui redis-cli kafka-topics consume setup-brokers build sh sql console cache-clear migrate-install migrate-diff make-migration db-create composer-install
 
 help: ## Показать список команд
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -57,3 +57,31 @@ make-migration: ## Создать пустую миграцию (make make-migra
 
 composer-install: ## composer install внутри контейнера
 	$(PHP) composer install
+
+## --- Brokers: RabbitMQ / Redis / Kafka ---
+
+logs-rabbit: ## Логи RabbitMQ
+	$(COMPOSE) logs -f rabbitmq
+
+logs-redis: ## Логи Redis
+	$(COMPOSE) logs -f redis
+
+logs-kafka: ## Логи Kafka
+	$(COMPOSE) logs -f broker
+
+rabbit-ui: ## Открыть RabbitMQ Management UI (guest/guest)
+	@echo "http://localhost:15672"
+
+redis-cli: ## redis-cli внутри контейнера
+	$(COMPOSE) exec redis redis-cli
+
+kafka-topics: ## Список Kafka-топиков
+	$(COMPOSE) exec broker /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+
+consume: ## Запустить messenger:consume вручную (make consume TRANSPORTS="async rabbit")
+	$(PHP) bin/console messenger:consume $(TRANSPORTS) -vv
+
+setup-brokers: ## Проверить доступность брокеров из php-контейнера
+	$(PHP) sh -c "php -r 'exit(extension_loaded(\"amqp\")?0:1);' && echo amqp-ok"
+	$(PHP) sh -c "php -r 'exit(extension_loaded(\"redis\")?0:1);' && echo redis-ok"
+	$(PHP) sh -c "php -r 'exit(extension_loaded(\"rdkafka\")?0:1);' && echo rdkafka-ok"
